@@ -1,4 +1,3 @@
-
 import pytest
 from django.contrib.auth.models import User, Permission
 from django.contrib.contenttypes.models import ContentType
@@ -63,7 +62,9 @@ def test_nested_nav_active_state(client, settings):
 def test_permission_based_display_user_lacks_perm(client, test_user, settings):
     settings.NAV_SPEC = [
         NavigationItem(title="Home", link="/"),
-        NavigationItem(title="Special", link="/special/", displayed="app.can_view_special"),
+        NavigationItem(
+            title="Special", link="/special/", displayed="app.can_view_special"
+        ),
     ]
     client.login(username="testuser", password="password")
     response = client.get("/")
@@ -75,7 +76,9 @@ def test_permission_based_display_user_lacks_perm(client, test_user, settings):
 def test_permission_based_display_user_has_perm(client, user_with_perm, settings):
     settings.NAV_SPEC = [
         NavigationItem(title="Home", link="/"),
-        NavigationItem(title="Special", link="/special/", displayed="app.can_view_special"),
+        NavigationItem(
+            title="Special", link="/special/", displayed="app.can_view_special"
+        ),
     ]
     client.login(username="testuser", password="password")
     response = client.get("/")
@@ -87,7 +90,9 @@ def test_permission_based_display_user_has_perm(client, user_with_perm, settings
 def test_callable_based_display(client, test_user, settings):
     settings.NAV_SPEC = [
         NavigationItem(title="Home", link="/"),
-        NavigationItem(title="Staff Only", link="/staff/", displayed=lambda r: r.user.is_staff),
+        NavigationItem(
+            title="Staff Only", link="/staff/", displayed=lambda r: r.user.is_staff
+        ),
     ]
     client.login(username="testuser", password="password")
 
@@ -104,6 +109,7 @@ def test_callable_based_display(client, test_user, settings):
     assert len(nav_spec) == 2
     assert nav_spec[1].title == "Staff Only"
 
+
 def test_dict_nav_spec_in_context(client, settings):
     settings.NAV_SPEC = {
         "main": [
@@ -116,7 +122,7 @@ def test_dict_nav_spec_in_context(client, settings):
     response = client.get("/")
     assert "NAV_SPEC" in response.context
     nav_spec_dict = response.context["NAV_SPEC"]
-    
+
     assert "main" in nav_spec_dict
     assert "footer" in nav_spec_dict
 
@@ -128,6 +134,7 @@ def test_dict_nav_spec_in_context(client, settings):
     footer_nav = nav_spec_dict["footer"]
     assert len(footer_nav) == 1
     assert not footer_nav[0].is_active
+
 
 def test_empty_nav_spec(client, settings):
     settings.NAV_SPEC = []

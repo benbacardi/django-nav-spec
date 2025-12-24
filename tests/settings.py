@@ -13,6 +13,16 @@ DATABASES = {
 INSTALLED_APPS = [
     "django.contrib.auth",
     "django.contrib.contenttypes",
+    "django.contrib.sessions",
+]
+
+
+MIDDLEWARE = [
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
 ]
 
 TEMPLATES = [
@@ -26,6 +36,9 @@ TEMPLATES = [
                 "nav_spec.context_processors.nav_spec",
             ],
         },
+        "DIRS": [
+            "tests/templates",
+        ],
     }
 ]
 
