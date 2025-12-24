@@ -18,6 +18,8 @@ build-backend = "hatchling.build"
 [dependency-groups]
 dev = [
     "ipython>=9.8.0",
+    "pytest>=8.0.0",
+    "pytest-django>=4.8.0",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -28,3 +30,6 @@ fallback-version = "0.0.0"
 
 [tool.hatch.version]
 source = "uv-dynamic-versioning"
+
+# [tool.pytest.ini_options]
+# DJANGO_SETTINGS_MODULE = "tests.settings"

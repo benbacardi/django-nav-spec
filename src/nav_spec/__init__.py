@@ -53,8 +53,6 @@ class NavigationItem:
                 return False
             if callable(self.displayed) and not self.displayed(request):
                 return False
-        if self.displayed and not self.display_func(request):
-            return False
         return True
 
     def copy_for_display(self, request):
