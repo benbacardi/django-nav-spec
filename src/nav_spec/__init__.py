@@ -1,8 +1,8 @@
 import importlib.metadata
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from django.http import HttpRequest
-
 
 try:
     __version__ = importlib.metadata.version(__name__)
@@ -82,6 +82,8 @@ class NavigationItem:
         )
 
 
-def process_nav_spec(spec: list[NavigationItem], request: HttpRequest) -> list[NavigationItem]:
+def process_nav_spec(
+    spec: list[NavigationItem], request: HttpRequest
+) -> list[NavigationItem]:
     filtered_nav = [nav.copy_for_display(request) for nav in spec]
     return [nav for nav in filtered_nav if nav]

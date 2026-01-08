@@ -1,9 +1,8 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
 from nav_spec import NavigationItem, process_nav_spec
-from nav_spec.context_processors import nav_spec as nav_spec_context_processor
 
 
 @pytest.fixture

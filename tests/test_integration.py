@@ -1,10 +1,9 @@
 import pytest
-from django.contrib.auth.models import User, Permission
+from django.contrib.auth.models import Permission, User
 from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase
 
 from nav_spec import NavigationItem
-
 
 pytestmark = pytest.mark.django_db
 
@@ -150,11 +149,11 @@ class TestCustomContextVariableName(TestCase):
     def test_custom_context_var_name_single_nav(self):
         """Test that NAV_SPEC_CONTEXT_VAR_NAME setting changes the context variable name"""
         with self.settings(
-            NAV_SPEC_CONTEXT_VAR_NAME='site_navigation',
+            NAV_SPEC_CONTEXT_VAR_NAME="site_navigation",
             NAV_SPEC=[
                 NavigationItem(title="Home", link="/", active_urls=["home"]),
                 NavigationItem(title="Page A", link="/page-a/", active_urls=["page_a"]),
-            ]
+            ],
         ):
             response = self.client.get("/")
 
@@ -171,15 +170,17 @@ class TestCustomContextVariableName(TestCase):
     def test_custom_context_var_name_multiple_navs(self):
         """Test that custom context var name works with dictionary navigation"""
         with self.settings(
-            NAV_SPEC_CONTEXT_VAR_NAME='navigation',
+            NAV_SPEC_CONTEXT_VAR_NAME="navigation",
             NAV_SPEC={
                 "main": [
                     NavigationItem(title="Home", link="/", active_urls=["home"]),
                 ],
                 "footer": [
-                    NavigationItem(title="Page B", link="/page-b/", active_urls=["page_b"]),
+                    NavigationItem(
+                        title="Page B", link="/page-b/", active_urls=["page_b"]
+                    ),
                 ],
-            }
+            },
         ):
             response = self.client.get("/")
 
