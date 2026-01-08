@@ -38,6 +38,8 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
+    "django-stubs>=5.2.8",
+    "mypy>=1.19.1",
     "pytest>=8.0.0",
     "pytest-cov>=7.0.0",
     "pytest-django>=4.11.1",
@@ -60,3 +62,17 @@ pythonpath = ["."]
 addopts = "--cov=nav_spec --cov-report=html --cov-report=term-missing"
 # Don't require manage.py - this is a Django package, not a project
 django_find_project = false
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+plugins = ["mypy_django_plugin.main"]
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+
+[tool.django-stubs]
+django_settings_module = "tests.settings"

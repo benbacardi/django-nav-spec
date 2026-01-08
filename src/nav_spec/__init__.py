@@ -1,4 +1,7 @@
 import importlib.metadata
+from typing import Any, Callable
+
+from django.http import HttpRequest
 
 
 try:
@@ -10,15 +13,15 @@ except importlib.metadata.PackageNotFoundError:
 class NavigationItem:
     def __init__(
         self,
-        title,
-        link=None,
-        children=None,
-        active_urls=None,
-        displayed=None,
-        is_active=None,
-        request=None,
-        **kwargs,
-    ):
+        title: str,
+        link: str | None = None,
+        children: list["NavigationItem"] | None = None,
+        active_urls: list[str] | None = None,
+        displayed: str | Callable[[HttpRequest], bool] | None = None,
+        is_active: Callable[[HttpRequest], bool] | None = None,
+        request: HttpRequest | None = None,
+        **kwargs: Any,
+    ) -> None:
         self.title = title
         self.link = link
         self.children = children or []
@@ -29,13 +32,14 @@ class NavigationItem:
         self.kwargs = kwargs
 
     @property
-    def is_active(self):
+    def is_active(self) -> bool:
         if not self.request:
             return False
         if self.children:
             return any(c.is_active for c in self.children)
         if (
             self.active_urls
+            and self.request.resolver_match
             and self.request.resolver_match.url_name in self.active_urls
         ):
             return True
@@ -43,7 +47,7 @@ class NavigationItem:
             return True
         return False
 
-    def is_displayed(self, request):
+    def is_displayed(self, request: HttpRequest) -> bool:
         if self.children and not self.displayed:
             return any(c.is_displayed(request) for c in self.children)
         if self.displayed:
@@ -55,17 +59,17 @@ class NavigationItem:
                 return False
         return True
 
-    def copy_for_display(self, request):
+    def copy_for_display(self, request: HttpRequest) -> "NavigationItem | None":
         if not self.is_displayed(request):
             return None
+        displayed_children: list[NavigationItem] | None = None
         if self.children:
             displayed_children = [
-                c.copy_for_display(request)
+                copied
                 for c in self.children
                 if c.is_displayed(request)
+                and (copied := c.copy_for_display(request)) is not None
             ]
-        else:
-            displayed_children = None
         return NavigationItem(
             title=self.title,
             link=self.link,
@@ -78,6 +82,6 @@ class NavigationItem:
         )
 
 
-def process_nav_spec(spec, request):
+def process_nav_spec(spec: list[NavigationItem], request: HttpRequest) -> list[NavigationItem]:
     filtered_nav = [nav.copy_for_display(request) for nav in spec]
     return [nav for nav in filtered_nav if nav]

@@ -45,4 +45,4 @@ TEMPLATES = [
 ROOT_URLCONF = "tests.urls"
 
 # This is where the library will look for the navigation spec
-NAV_SPEC = []
+NAV_SPEC: list = []
