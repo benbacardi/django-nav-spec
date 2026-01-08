@@ -204,6 +204,23 @@ Then, in your template, you can access each menu as required:
 </ul>
 ```
 
+## Customizing the Context Variable Name
+
+By default, the navigation is available in templates as `NAV_SPEC`. You can customize this by setting `NAV_SPEC_CONTEXT_VAR_NAME`:
+
+```python
+# settings.py
+NAV_SPEC_CONTEXT_VAR_NAME = 'navigation'
+```
+
+Then use the custom name in your templates:
+
+```django
+{% for item in navigation %}
+    ...
+{% endfor %}
+```
+
 ## Development
 
 ```bash

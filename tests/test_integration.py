@@ -1,6 +1,7 @@
 import pytest
 from django.contrib.auth.models import User, Permission
 from django.contrib.contenttypes.models import ContentType
+from django.test import TestCase
 
 from nav_spec import NavigationItem
 
@@ -141,3 +142,68 @@ def test_empty_nav_spec(client, settings):
     response = client.get("/")
     nav_spec = response.context["NAV_SPEC"]
     assert nav_spec == []
+
+
+class TestCustomContextVariableName(TestCase):
+    """Test custom context variable name configuration"""
+
+    def test_custom_context_var_name_single_nav(self):
+        """Test that NAV_SPEC_CONTEXT_VAR_NAME setting changes the context variable name"""
+        with self.settings(
+            NAV_SPEC_CONTEXT_VAR_NAME='site_navigation',
+            NAV_SPEC=[
+                NavigationItem(title="Home", link="/", active_urls=["home"]),
+                NavigationItem(title="Page A", link="/page-a/", active_urls=["page_a"]),
+            ]
+        ):
+            response = self.client.get("/")
+
+            # Should NOT have NAV_SPEC in context
+            self.assertNotIn("NAV_SPEC", response.context)
+
+            # Should have custom name instead
+            self.assertIn("site_navigation", response.context)
+            nav_spec = response.context["site_navigation"]
+            self.assertEqual(len(nav_spec), 2)
+            self.assertEqual(nav_spec[0].title, "Home")
+            self.assertTrue(nav_spec[0].is_active)
+
+    def test_custom_context_var_name_multiple_navs(self):
+        """Test that custom context var name works with dictionary navigation"""
+        with self.settings(
+            NAV_SPEC_CONTEXT_VAR_NAME='navigation',
+            NAV_SPEC={
+                "main": [
+                    NavigationItem(title="Home", link="/", active_urls=["home"]),
+                ],
+                "footer": [
+                    NavigationItem(title="Page B", link="/page-b/", active_urls=["page_b"]),
+                ],
+            }
+        ):
+            response = self.client.get("/")
+
+            # Should NOT have NAV_SPEC in context
+            self.assertNotIn("NAV_SPEC", response.context)
+
+            # Should have custom name instead
+            self.assertIn("navigation", response.context)
+            nav_dict = response.context["navigation"]
+
+            self.assertIn("main", nav_dict)
+            self.assertIn("footer", nav_dict)
+            self.assertEqual(nav_dict["main"][0].title, "Home")
+            self.assertEqual(nav_dict["footer"][0].title, "Page B")
+
+    def test_default_context_var_name_when_not_configured(self):
+        """Test backward compatibility - defaults to NAV_SPEC when not configured"""
+        with self.settings(
+            NAV_SPEC=[
+                NavigationItem(title="Home", link="/"),
+            ]
+        ):
+            response = self.client.get("/")
+
+            # Should have default NAV_SPEC name
+            self.assertIn("NAV_SPEC", response.context)
+            self.assertEqual(len(response.context["NAV_SPEC"]), 1)
