@@ -204,3 +204,18 @@ Then, in your template, you can access each menu as required:
 </ul>
 ```
 
+## Development
+
+```bash
+uv sync
+uv run pytest
+```
+
+## Requirements
+
+- Python 3.10+
+- Django 4.2+
+
+## License
+
+MIT

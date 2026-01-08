@@ -6,11 +6,9 @@ readme = "README.md"
 authors = [
     { name = "Ben Cardy", email = "me@bencardy.co.uk" }
 ]
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 dependencies = [
     "django>=4.2",
-    "pytest-cov>=7.0.0",
-    "pytest-django>=4.11.1",
 ]
 
 [build-system]
@@ -19,9 +17,9 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
-    "ipython>=9.8.0",
     "pytest>=8.0.0",
-    "pytest-django>=4.8.0",
+    "pytest-cov>=7.0.0",
+    "pytest-django>=4.11.1",
 ]
 
 [tool.hatch.build.targets.wheel]
