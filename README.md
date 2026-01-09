@@ -2,6 +2,7 @@
 
 [![PyPI](https://img.shields.io/pypi/v/django-nav-spec)](https://pypi.org/project/django-nav-spec/)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/django-nav-spec)
+![Django Version](https://img.shields.io/pypi/frameworkversions/django/django-nav-spec?label=django&labelColor=092E20&color=%2344B78B)
 
 Define your site’s navigation in settings, and simplify your templates. 
 
