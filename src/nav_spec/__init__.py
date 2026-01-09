@@ -5,7 +5,7 @@ from typing import Any
 from django.http import HttpRequest
 
 try:
-    __version__ = importlib.metadata.version(__name__)
+    __version__ = importlib.metadata.version("django-nav-spec")
 except importlib.metadata.PackageNotFoundError:
     __version__ = "0.0.0"
 
