@@ -1,5 +1,8 @@
 # Django Nav Spec
 
+[![PyPI](https://img.shields.io/pypi/v/django-nav-spec)](https://pypi.org/project/django-nav-spec/)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/django-nav-spec)
+
 Define your site’s navigation in settings, and simplify your templates. 
 
 ## Rationale
@@ -298,4 +301,4 @@ uv run pytest
 
 ## License
 
-MIT
+`django-nav-spec` is licensed under the MIT license. See the [`LICENSE`](LICENSE) file for more information.
