@@ -15,6 +15,7 @@ A site’s navigation can be complex, and can lead to unwieldy templates full of
 *   Automatic active state detection based on URL names or custom logic.
 *   Conditionally display navigation items based on user permissions or other request attributes.
 *   Supports nested navigation structures.
+*   Two usage modes: context processor (automatic) or template tag (on-demand).
 
 ## Quick Start
 
@@ -26,22 +27,6 @@ poetry add django-nav-spec
 uv add django-nav-spec
 ```
 
-Add the `nav_spec.context_processors.nav_spec` context processor to your project’s settings:
-
-```python
-TEMPLATES = [
-    {
-        ...
-        'OPTIONS': {
-            'context_processors': [
-                ...
-                'nav_spec.context_processors.nav_spec',
-                ...
-            ],
-        },
-    },
-]
-```
 Import `NavigationItem` in your settings and define your navigation as a list of items in the `NAV_SPEC` setting:
 
 ```python
@@ -57,7 +42,29 @@ NAV_SPEC = [
     ),
 ]
 ```
-Finally, iterate over the `NAV_SPEC` context variable in your template to render the navigation:
+
+Then choose one of two ways to use it in your templates:
+
+### Option 1: Context Processor (automatic)
+
+Add the context processor to your project's settings:
+
+```python
+TEMPLATES = [
+    {
+        ...
+        'OPTIONS': {
+            'context_processors': [
+                ...
+                'nav_spec.context_processors.nav_spec',
+                ...
+            ],
+        },
+    },
+]
+```
+
+The navigation will automatically be available as `NAV_SPEC` in all templates:
 
 ```django
 <nav>
@@ -70,7 +77,40 @@ Finally, iterate over the `NAV_SPEC` context variable in your template to render
   </ul>
 </nav>
 ```
-This example may not look like it’s saved you much, but the power comes as you add more items, hierarchy, or permissions. Read below for all the available options. 
+
+### Option 2: Template Tag (on-demand)
+
+Add `nav_spec` to your `INSTALLED_APPS`:
+
+```python
+INSTALLED_APPS = [
+    ...
+    'nav_spec',
+]
+```
+
+Load the template tag and call it where needed:
+
+```django
+{% load nav_spec %}
+{% get_nav_spec as nav %}
+
+<nav>
+  <ul>
+    {% for item in nav %}
+    <li class="{% if item.is_active %}active{% endif %}">
+      <a href="{{ item.link }}">{{ item.title }}</a>
+    </li>
+    {% endfor %}
+  </ul>
+</nav>
+```
+
+**When to use which approach:**
+- **Context Processor**: Best when navigation is needed on every page. Processed automatically for all templates.
+- **Template Tag**: Best for selective use. Only processed when explicitly called, which can improve performance if navigation isn't needed everywhere.
+
+This example may not look like it's saved you much, but the power comes as you add more items, hierarchy, or permissions. Read below for all the available options. 
 
 ## `NavigationItem` options
 
@@ -136,9 +176,7 @@ NavigationItem(
 )
 ```
 
-### Hierarchical Navigation
-
-## Nested Navigation
+### Nested Navigation
 
 To create nested navigation, use the `children` attribute:
 
@@ -196,6 +234,7 @@ NAV_SPEC = {
 
 Then, in your template, you can access each menu as required:
 
+**With context processor:**
 ```html
 <ul>
     {% for item in NAV_SPEC.main_nav %}
@@ -204,7 +243,29 @@ Then, in your template, you can access each menu as required:
 </ul>
 ```
 
+**With template tag:**
+```django
+{% load nav_spec %}
+{# Get a specific menu #}
+{% get_nav_spec "main_nav" as main_nav %}
+<ul>
+    {% for item in main_nav %}
+    ...
+    {% endfor %}
+</ul>
+
+{# Or get all menus #}
+{% get_nav_spec as all_nav %}
+<ul>
+    {% for item in all_nav.footer_nav %}
+    ...
+    {% endfor %}
+</ul>
+```
+
 ## Customizing the Context Variable Name
+
+**Note:** This only applies when using the context processor.
 
 By default, the navigation is available in templates as `NAV_SPEC`. You can customize this by setting `NAV_SPEC_CONTEXT_VAR_NAME`:
 
@@ -220,6 +281,8 @@ Then use the custom name in your templates:
     ...
 {% endfor %}
 ```
+
+When using the template tag, you control the variable name directly in the template with the `as` clause.
 
 ## Development
 

@@ -1,8 +1,9 @@
 from unittest.mock import MagicMock
 
 import pytest
+from django.template import Context, Template
 
-from nav_spec import NavigationItem, process_nav_spec
+from nav_spec import NavigationItem, get_processed_nav_spec, process_nav_spec
 
 
 @pytest.fixture
@@ -157,3 +158,226 @@ class TestNavigationItemCopyForDisplay:
         assert new_parent is not None
         assert len(new_parent.children) == 1
         assert new_parent.children[0].title == "Child Visible"
+
+
+class TestGetProcessedNavSpec:
+    def test_simple_list_nav_spec(self, mock_request, settings):
+        settings.NAV_SPEC = [
+            NavigationItem(title="Home", link="/"),
+            NavigationItem(title="About", link="/about/"),
+        ]
+        result = get_processed_nav_spec(mock_request)
+        assert isinstance(result, list)
+        assert len(result) == 2
+        assert result[0].title == "Home"
+        assert result[1].title == "About"
+
+    def test_dict_nav_spec_without_key(self, mock_request, settings):
+        settings.NAV_SPEC = {
+            "header": [NavigationItem(title="Home", link="/")],
+            "footer": [NavigationItem(title="Privacy", link="/privacy/")],
+        }
+        result = get_processed_nav_spec(mock_request)
+        assert isinstance(result, dict)
+        assert "header" in result
+        assert "footer" in result
+        assert len(result["header"]) == 1
+        assert result["header"][0].title == "Home"
+        assert len(result["footer"]) == 1
+        assert result["footer"][0].title == "Privacy"
+
+    def test_dict_nav_spec_with_key(self, mock_request, settings):
+        settings.NAV_SPEC = {
+            "header": [NavigationItem(title="Home", link="/")],
+            "footer": [NavigationItem(title="Privacy", link="/privacy/")],
+        }
+        result = get_processed_nav_spec(mock_request, key="header")
+        assert isinstance(result, list)
+        assert len(result) == 1
+        assert result[0].title == "Home"
+
+    def test_dict_nav_spec_with_missing_key(self, mock_request, settings):
+        settings.NAV_SPEC = {
+            "header": [NavigationItem(title="Home", link="/")],
+        }
+        result = get_processed_nav_spec(mock_request, key="nonexistent")
+        assert isinstance(result, list)
+        assert len(result) == 0
+
+    def test_filters_by_permission(self, mock_request, settings):
+        mock_request.user.has_perm.return_value = False
+        settings.NAV_SPEC = [
+            NavigationItem(title="Public", link="/"),
+            NavigationItem(title="Admin", link="/admin/", displayed="app.view_admin"),
+        ]
+        result = get_processed_nav_spec(mock_request)
+        assert len(result) == 1
+        assert result[0].title == "Public"
+
+    def test_filters_by_callable(self, mock_request, settings):
+        mock_request.user.is_staff = False
+        settings.NAV_SPEC = [
+            NavigationItem(title="Public", link="/"),
+            NavigationItem(
+                title="Staff", link="/staff/", displayed=lambda r: r.user.is_staff
+            ),
+        ]
+        result = get_processed_nav_spec(mock_request)
+        assert len(result) == 1
+        assert result[0].title == "Public"
+
+    def test_preserves_active_state(self, mock_request, settings):
+        mock_request.resolver_match.url_name = "home"
+        settings.NAV_SPEC = [
+            NavigationItem(title="Home", link="/", active_urls=["home"]),
+            NavigationItem(title="About", link="/about/", active_urls=["about"]),
+        ]
+        result = get_processed_nav_spec(mock_request)
+        assert result[0].is_active
+        assert not result[1].is_active
+
+    def test_empty_list(self, mock_request, settings):
+        settings.NAV_SPEC = []
+        result = get_processed_nav_spec(mock_request)
+        assert result == []
+
+    def test_empty_dict(self, mock_request, settings):
+        settings.NAV_SPEC = {}
+        result = get_processed_nav_spec(mock_request)
+        assert result == {}
+
+
+class TestGetNavSpecTemplateTag:
+    def test_simple_list_nav_spec(self, mock_request, settings):
+        settings.NAV_SPEC = [
+            NavigationItem(title="Home", link="/"),
+            NavigationItem(title="About", link="/about/"),
+        ]
+        template = Template(
+            "{% load nav_spec %}{% get_nav_spec as nav %}"
+            "{% for item in nav %}{{ item.title }},{% endfor %}"
+        )
+        context = Context({"request": mock_request})
+        output = template.render(context)
+        assert "Home," in output
+        assert "About," in output
+
+    def test_dict_nav_spec_without_key(self, mock_request, settings):
+        settings.NAV_SPEC = {
+            "header": [NavigationItem(title="Home", link="/")],
+            "footer": [NavigationItem(title="Privacy", link="/privacy/")],
+        }
+        template = Template(
+            "{% load nav_spec %}{% get_nav_spec as nav %}"
+            "{{ nav.header.0.title }},{{ nav.footer.0.title }}"
+        )
+        context = Context({"request": mock_request})
+        output = template.render(context)
+        assert "Home," in output
+        assert "Privacy" in output
+
+    def test_dict_nav_spec_with_key(self, mock_request, settings):
+        settings.NAV_SPEC = {
+            "header": [NavigationItem(title="Home", link="/")],
+            "footer": [NavigationItem(title="Privacy", link="/privacy/")],
+        }
+        template = Template(
+            "{% load nav_spec %}{% get_nav_spec 'header' as header_nav %}"
+            "{% for item in header_nav %}{{ item.title }}{% endfor %}"
+        )
+        context = Context({"request": mock_request})
+        output = template.render(context)
+        assert "Home" in output
+        assert "Privacy" not in output
+
+    def test_dict_nav_spec_with_missing_key(self, mock_request, settings):
+        settings.NAV_SPEC = {
+            "header": [NavigationItem(title="Home", link="/")],
+        }
+        template = Template(
+            "{% load nav_spec %}{% get_nav_spec 'nonexistent' as nav %}"
+            "{% if nav %}HAS_NAV{% else %}NO_NAV{% endif %}"
+        )
+        context = Context({"request": mock_request})
+        output = template.render(context)
+        assert "NO_NAV" in output
+
+    def test_active_state_in_template(self, mock_request, settings):
+        mock_request.resolver_match.url_name = "home"
+        settings.NAV_SPEC = [
+            NavigationItem(title="Home", link="/", active_urls=["home"]),
+            NavigationItem(title="About", link="/about/", active_urls=["about"]),
+        ]
+        template = Template(
+            "{% load nav_spec %}{% get_nav_spec as nav %}"
+            "{% for item in nav %}"
+            "{% if item.is_active %}ACTIVE:{{ item.title }}{% endif %}"
+            "{% endfor %}"
+        )
+        context = Context({"request": mock_request})
+        output = template.render(context)
+        assert "ACTIVE:Home" in output
+        assert "ACTIVE:About" not in output
+
+    def test_permission_filtering(self, mock_request, settings):
+        mock_request.user.has_perm.return_value = False
+        settings.NAV_SPEC = [
+            NavigationItem(title="Public", link="/"),
+            NavigationItem(title="Admin", link="/admin/", displayed="app.view_admin"),
+        ]
+        template = Template(
+            "{% load nav_spec %}{% get_nav_spec as nav %}"
+            "{% for item in nav %}{{ item.title }},{% endfor %}"
+        )
+        context = Context({"request": mock_request})
+        output = template.render(context)
+        assert "Public," in output
+        assert "Admin" not in output
+
+    def test_callable_filtering(self, mock_request, settings):
+        mock_request.user.is_staff = False
+        settings.NAV_SPEC = [
+            NavigationItem(title="Public", link="/"),
+            NavigationItem(
+                title="Staff", link="/staff/", displayed=lambda r: r.user.is_staff
+            ),
+        ]
+        template = Template(
+            "{% load nav_spec %}{% get_nav_spec as nav %}"
+            "{% for item in nav %}{{ item.title }},{% endfor %}"
+        )
+        context = Context({"request": mock_request})
+        output = template.render(context)
+        assert "Public," in output
+        assert "Staff" not in output
+
+    def test_nested_navigation(self, mock_request, settings):
+        settings.NAV_SPEC = [
+            NavigationItem(
+                title="Parent",
+                children=[
+                    NavigationItem(title="Child 1", link="/child1/"),
+                    NavigationItem(title="Child 2", link="/child2/"),
+                ],
+            ),
+        ]
+        template = Template(
+            "{% load nav_spec %}{% get_nav_spec as nav %}"
+            "{{ nav.0.title }}:"
+            "{% for child in nav.0.children %}{{ child.title }},{% endfor %}"
+        )
+        context = Context({"request": mock_request})
+        output = template.render(context)
+        assert "Parent:" in output
+        assert "Child 1," in output
+        assert "Child 2," in output
+
+    def test_empty_nav_spec(self, mock_request, settings):
+        settings.NAV_SPEC = []
+        template = Template(
+            "{% load nav_spec %}{% get_nav_spec as nav %}"
+            "{% if nav %}HAS_NAV{% else %}NO_NAV{% endif %}"
+        )
+        context = Context({"request": mock_request})
+        output = template.render(context)
+        assert "NO_NAV" in output

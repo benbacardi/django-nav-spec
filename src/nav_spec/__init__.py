@@ -2,6 +2,7 @@ import importlib.metadata
 from collections.abc import Callable
 from typing import Any
 
+from django.conf import settings
 from django.http import HttpRequest
 
 try:
@@ -87,3 +88,26 @@ def process_nav_spec(
 ) -> list[NavigationItem]:
     filtered_nav = [nav.copy_for_display(request) for nav in spec]
     return [nav for nav in filtered_nav if nav]
+
+
+def get_processed_nav_spec(
+    request: HttpRequest, key: str | None = None
+) -> list[NavigationItem] | dict[str, list[NavigationItem]]:
+    """
+    Get processed navigation spec from settings.
+
+    If NAV_SPEC is a dict and key is provided, returns the processed spec for that key.
+    If NAV_SPEC is a dict and no key is provided, returns dict of all processed specs.
+    If NAV_SPEC is a list, returns the processed list.
+    """
+    if isinstance(settings.NAV_SPEC, dict):
+        if key:
+            spec = settings.NAV_SPEC.get(key, [])
+            return process_nav_spec(spec, request)
+        else:
+            return {
+                k: process_nav_spec(v, request)
+                for k, v in settings.NAV_SPEC.items()
+            }
+    else:
+        return process_nav_spec(settings.NAV_SPEC, request)
